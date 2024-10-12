@@ -2,70 +2,49 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.UIElements;
+using UnityEngine.Experimental.GlobalIllumination;
 
-public class PlayerControllerX : MonoBehaviour
+public class PlayerCollision : MonoBehaviour
 {
-    Rigidbody rb;
-    float speed = 10f;
-    float movementX;
-    float movementY;
-
+    PlayerMovement playerMovement;
     [SerializeField]
     Light spotLight;
     [SerializeField]
-    ParticleSystem attackedVFX, pickupVFX, keyVFX, fogVFX;
+    ParticleSystem attackedVFX, pickupVFX, keyVFX;
     [SerializeField]
     TextMeshProUGUI candleText, keyText, gameoverText, winText;
     [SerializeField]
-    GameObject gameoverUI;
-    [SerializeField]
-    Animator gateAnimator, gameoverAnimator, hudAnimator;
-    Animator enemyAnimator;
+    Animator gateAnimator;
 
     int health = 3;
-    int candleQuantitiy = 3;
+    int candleQuantity = 3;
     int candleCollected = 0;
     int keyQuantity = 1;
     int keyCollected = 0;
+    bool hasMaxHealthSet = false;
     bool hasKey = false;
     bool isGameover = false;
-    public bool IsGameover 
+
+    // Properties
+    public bool IsGameover
     {
-        get { return isGameover; } 
+        get { return isGameover; }
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        rb = GetComponent<Rigidbody>();        
-
-        // Play the fog visualFX
-        fogVFX.Play();
+        // Get the PlayerMovement script
+        playerMovement = GetComponent<PlayerMovement>();
 
         // Set the health bar to the max amount of the healt player
         HealthBar.Instance.SetMaxHealth(health);
 
         // Set the initial candle text and key text
-        candleText.text = $"{candleCollected}/{candleQuantitiy}";
+        candleText.text = $"{candleCollected}/{candleQuantity}";
         keyText.text = $"{keyCollected}/{keyQuantity}";
     }
 
-    private void FixedUpdate()
-    {
-        // Direction based on the input of the player from PlayerInput component
-        Vector3 movementDirection = new Vector3(movementX, 0f, movementY);
-        rb.AddForce(movementDirection * speed);
-    }
-
-    // This function is called when an input is detected by the InputAction
-    public void OnMove(InputValue movementValue)
-    {
-        Vector2 movementVector = movementValue.Get<Vector2>();
-        movementX = movementVector.x;
-        movementY = movementVector.y;
-    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -75,14 +54,13 @@ public class PlayerControllerX : MonoBehaviour
             candleCollected++;
 
             // Set and update the text UI for the candle
-            candleText.text = $"{candleCollected}/{candleQuantitiy}";
+            candleText.text = $"{candleCollected}/{candleQuantity}";
 
             // Insntantiate a spark visualFX
             Instantiate(pickupVFX, other.transform.position, pickupVFX.transform.rotation);
 
             // Increase the range and intensity of the spot light illuminating the player
-            spotLight.intensity *= 2f;
-            spotLight.spotAngle += 30f;
+            StartCoroutine(StrongerLight(spotLight));
 
             // Play soundFX from the AudioManager Instance
             AudioManager.Instance.PlaySFX("PickupSFX");
@@ -117,61 +95,28 @@ public class PlayerControllerX : MonoBehaviour
             // Play SoundFX from the AudioManager Instance
             AudioManager.Instance.PlaySFX("BiteSFX");
 
-            // Play attack animation
-            enemyAnimator = collision.gameObject.GetComponentInChildren<Animator>();
-            enemyAnimator.SetTrigger("isAttacking");
-
             // Instantiate a visualFX, must be a child gameobject of the player
             Instantiate(attackedVFX, transform.position, attackedVFX.transform.rotation, this.transform);
 
             // Reduce the health of the player every contact with the enemy
             health--;
 
-            // Disable the hud animator
-            hudAnimator.enabled = false;
-
             // Update the healt bar based on the current healt of the player
             HealthBar.Instance.SetHealth(health);
 
             // Decrease the player's speed based on the health amount left
-            switch (health)
-            {
-                case 1: speed = 4f; 
-                    break;
-                case 2: speed = 7f;
-                    break;
-                case 3: speed = 10f;
-                    break;
-                default: speed = 0f; 
-                    break;
-
-            }
+            ReduceSpeedBasedOnHealth(health);
 
             // Display game over when health is less than or equal to zero
-            if (health <= 0)
-            {
-                isGameover = true;
-
-                // Play the lose sfx from the audio manager
-                AudioManager.Instance.PlaySFX("LoseSFX");
-
-                // Display the gameover text and hide the win text
-                winText.enabled = false;
-                gameoverText.enabled = true;
-                UIManager.Instance.GameoverStartCoroutine();
-
-                // Destroy the player
-                gameObject.SetActive(false);
-            }
+            PlayerDeath(health);
         }
-        
+
         // The win condition of the game
         if (collision.gameObject.CompareTag("Gate") && hasKey)
         {
             isGameover = true;
 
             // Play the gate opening animation
-            // gateAnimator = collision.gameObject.GetComponent<Animator>();
             gateAnimator.SetTrigger("hasKey");
 
             // Play the win SFX from the audio manager
@@ -182,5 +127,55 @@ public class PlayerControllerX : MonoBehaviour
             gameoverText.enabled = false;
             UIManager.Instance.GameoverStartCoroutine();
         }
+    }
+
+    private void ReduceSpeedBasedOnHealth(int h)
+    {
+        switch (h)
+        {
+            case 1:
+                playerMovement.Speed = 4f;
+                break;
+            case 2:
+                playerMovement.Speed = 7f;
+                break;
+            case 3:
+                playerMovement.Speed = 10f;
+                break;
+            default:
+                playerMovement.Speed = 0f;
+                break;
+        }
+    }
+
+    private void PlayerDeath(int h)
+    {
+        if (h <= 0)
+        {
+            isGameover = true;
+
+            // Play the lose sfx from the audio manager
+            AudioManager.Instance.PlaySFX("LoseSFX");
+
+            // Display the gameover text and hide the win text
+            winText.enabled = false;
+            gameoverText.enabled = true;
+            UIManager.Instance.GameoverStartCoroutine();
+
+            // Destroy the player
+            gameObject.SetActive(false);
+        }
+    }
+
+    private IEnumerator StrongerLight(Light light)
+    {
+        float doubleLight = light.intensity * 2;
+
+        while (light.intensity <= doubleLight)
+        {
+            light.intensity = Mathf.Lerp(light.intensity, light.intensity * 2f, Time.deltaTime);
+            light.spotAngle = Mathf.Lerp(light.spotAngle, light.spotAngle + 30f, Time.deltaTime);
+        }
+        yield return null;
     }
 }

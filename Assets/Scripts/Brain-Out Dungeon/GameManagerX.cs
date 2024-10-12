@@ -11,26 +11,33 @@ using UnityEditor;
 public class GameManagerX : MonoBehaviour
 {
     public static GameManagerX Instance;
-    GameObject player;
+    [SerializeField]
+    PlayerCollision player;
+    float restartDelay = 2f;
 
     private void Awake()
     {
         Instance = this;
-        player = GameObject.Find("Player");
     }
 
     private void Update()
     {
-        if (!player.activeInHierarchy && Input.GetKeyDown(KeyCode.Space)) 
+        if (player.IsGameover && Input.GetKeyDown(KeyCode.Space)) 
         {
-            RestartGame();
+            StartCoroutine(RestartCoroutine());
         }
-
     }
 
     public void RestartGame()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    IEnumerator RestartCoroutine()
+    {
+        UIManager.Instance.GameoverEndCoroutine();
+        yield return new WaitForSeconds(restartDelay);
+        RestartGame();
     }
 
     public void ExitGame()

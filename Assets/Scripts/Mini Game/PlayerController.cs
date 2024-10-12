@@ -85,7 +85,7 @@ public class PlayerController : MonoBehaviour
 
         if (rb.velocity.magnitude > 5f)
         {
-            Instantiate(movementFX, transform.position, Quaternion.identity);
+            Instantiate(movementFX, transform.position, Quaternion.identity, this.transform);
         }
     }
 
