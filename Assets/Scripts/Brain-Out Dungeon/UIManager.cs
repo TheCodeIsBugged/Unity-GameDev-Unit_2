@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class UIManager : MonoBehaviour
@@ -11,9 +12,27 @@ public class UIManager : MonoBehaviour
     public Animator gameover;
     private float delay = 2f;
 
+    [SerializeField]
+    private TextMeshProUGUI gameoverText, playButtonText;
+
     private void Awake()
     {
         Instance = this;
+    }
+
+    public void GameLostText()
+    {
+        gameoverText.text = "YOU DON'T HAVE \r\nA BRAIN LEFT";
+    }
+
+    public void GameWonText()
+    {
+        gameoverText.text = "YOUR BRAIN HAS\r\nSUCCESSFULLY LEFT";
+    }
+
+    public void SetPlayButtonText(string s)
+    {
+        playButtonText.text = s;
     }
 
     public void MenuStartCoroutine() 

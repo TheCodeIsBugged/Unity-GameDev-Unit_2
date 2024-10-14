@@ -22,6 +22,16 @@ public class GameManagerX : MonoBehaviour
 
     private void Update()
     {
+        // Check if the player is active in the scene
+        if (player.gameObject.activeInHierarchy)
+        {
+            UIManager.Instance.SetPlayButtonText("RESUME");
+        }
+        else
+        {
+            UIManager.Instance.SetPlayButtonText("PLAY");
+        }
+
         if (player.IsGameover && Input.GetKeyDown(KeyCode.Space)) 
         {
             StartCoroutine(RestartCoroutine());

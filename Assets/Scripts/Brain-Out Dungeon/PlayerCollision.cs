@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Experimental.GlobalIllumination;
 
@@ -21,7 +22,6 @@ public class PlayerCollision : MonoBehaviour
     int candleCollected = 0;
     int keyQuantity = 1;
     int keyCollected = 0;
-    bool hasMaxHealthSet = false;
     bool hasKey = false;
     bool isGameover = false;
 
@@ -43,6 +43,15 @@ public class PlayerCollision : MonoBehaviour
         // Set the initial candle text and key text
         candleText.text = $"{candleCollected}/{candleQuantity}";
         keyText.text = $"{keyCollected}/{keyQuantity}";
+    }
+
+    private void Update()
+    {
+        // Update the healt bar based on the current healt of the player
+        if (health < 3)
+        {
+            HealthBar.Instance.SetHealth(health);
+        }
     }
 
 
@@ -123,8 +132,7 @@ public class PlayerCollision : MonoBehaviour
             AudioManager.Instance.PlaySFX("WinSFX");
 
             // Display the win text and hide the gameover text
-            winText.enabled = true;
-            gameoverText.enabled = false;
+            UIManager.Instance.GameWonText();
             UIManager.Instance.GameoverStartCoroutine();
         }
     }
@@ -158,8 +166,7 @@ public class PlayerCollision : MonoBehaviour
             AudioManager.Instance.PlaySFX("LoseSFX");
 
             // Display the gameover text and hide the win text
-            winText.enabled = false;
-            gameoverText.enabled = true;
+            UIManager.Instance.GameLostText();
             UIManager.Instance.GameoverStartCoroutine();
 
             // Destroy the player
@@ -169,13 +176,15 @@ public class PlayerCollision : MonoBehaviour
 
     private IEnumerator StrongerLight(Light light)
     {
-        float doubleLight = light.intensity * 2;
+        float doubleLightIntesity = light.intensity * 2;
+        float incrementLightAngle = light.spotAngle + 30f;
 
-        while (light.intensity <= doubleLight)
+        while (light.intensity <= doubleLightIntesity)
         {
-            light.intensity = Mathf.Lerp(light.intensity, light.intensity * 2f, Time.deltaTime);
-            light.spotAngle = Mathf.Lerp(light.spotAngle, light.spotAngle + 30f, Time.deltaTime);
+            light.intensity = Mathf.Lerp(light.intensity, doubleLightIntesity, Time.deltaTime);
+            light.spotAngle = Mathf.Lerp(light.spotAngle, incrementLightAngle, Time.deltaTime);
+
+            yield return null;
         }
-        yield return null;
     }
 }
